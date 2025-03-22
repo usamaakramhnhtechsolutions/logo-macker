@@ -1,3 +1,4 @@
+"use client"
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { fabric } from "fabric-pure-browser";
