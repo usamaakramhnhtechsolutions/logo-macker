@@ -29,6 +29,30 @@ const LogoMaker = () => {
     return () => fabricCanvas.dispose();
   }, []);
 
+  const applyFilter = (filterType) => {
+    const activeObject = canvas.getActiveObject();
+    if (activeObject && activeObject.type === "image") {
+      let filter;
+      switch (filterType) {
+        case "grayscale":
+          filter = new fabric.Image.filters.Grayscale();
+          break;
+        case "sepia":
+          filter = new fabric.Image.filters.Sepia();
+          break;
+        case "invert":
+          filter = new fabric.Image.filters.Invert();
+          break;
+        default:
+          return;
+      }
+      activeObject.filters.push(filter);
+      activeObject.applyFilters();
+      canvas.renderAll();
+    }
+  };
+  
+
   const saveState = (canvas) => {
     setHistory((prev) => [...prev, JSON.stringify(canvas.toJSON())]);
   };
@@ -178,9 +202,87 @@ const LogoMaker = () => {
     }
   };
 
+  const applyBrightnessContrast = (type, value) => {
+    const activeObject = canvas?.getActiveObject();
+    if (activeObject && activeObject.type === "image") {
+      let filter;
+      
+      if (type === "brightness") {
+        filter = new fabric.Image.filters.Brightness({ brightness: value });
+      } else if (type === "contrast") {
+        filter = new fabric.Image.filters.Contrast({ contrast: value });
+      }
+  
+      activeObject.filters.push(filter);
+      activeObject.applyFilters();
+      canvas.renderAll();
+    }
+  };
+
+  const applyBlur = () => {
+    const activeObject = canvas?.getActiveObject();
+    if (activeObject && activeObject.type === "image") {
+      let filter = new fabric.Image.filters.Blur({ blur: 0.2 });
+      activeObject.filters.push(filter);
+      activeObject.applyFilters();
+      canvas.renderAll();
+    }
+  };
+
+  const flipImage = (direction) => {
+    const activeObject = canvas?.getActiveObject();
+    if (activeObject && activeObject.type === "image") {
+      if (direction === "horizontal") {
+        activeObject.set("flipX", !activeObject.flipX);
+      } else if (direction === "vertical") {
+        activeObject.set("flipY", !activeObject.flipY);
+      }
+      canvas.renderAll();
+    }
+  };
+
+  const cropImage = () => {
+    const activeObject = canvas?.getActiveObject();
+    if (activeObject && activeObject.type === "image") {
+      activeObject.set({
+        clipPath: new fabric.Rect({
+          left: 10,
+          top: 10,
+          width: 100,
+          height: 100,
+          absolutePositioned: true,
+        }),
+      });
+      canvas.renderAll();
+    }
+  };
+
+  const resetFilters = () => {
+    const activeObject = canvas?.getActiveObject();
+    if (activeObject && activeObject.type === "image") {
+      activeObject.filters = [];
+      activeObject.applyFilters();
+      canvas.renderAll();
+    }
+  };
+  
+  const undos = () => {
+    if (history.length > 1) {
+      setRedoStack((prev) => [...prev, history.pop()]);
+      const prevState = history[history.length - 1]; // Get the last saved state
+      setHistory([...history]);
+      canvas.loadFromJSON(prevState, () => {
+        canvas.renderAll();
+      });
+    }
+  };
+  
+
   return (
     <div className="p-4">
       <div className="mt-4 flex flex-wrap gap-2 justify-start">
+      <button onClick={undos} className="px-4 py-2 bg-yellow-500 text-white">Back</button>
+
         <button onClick={() => updateTextStyle("fontFamily", "Arial")} className="px-4 py-2 bg-gray-500 text-white">Arial</button>
         <button onClick={() => updateTextStyle("fontFamily", "Courier New")} className="px-4 py-2 bg-gray-500 text-white">Courier</button>
         <button onClick={() => updateTextStyle("textAlign", "left")} className="px-4 py-2 bg-gray-600 text-white">Left</button>
@@ -195,6 +297,11 @@ const LogoMaker = () => {
         <input type="color" onChange={(e) => updateTextStyle("fill", e.target.value)} />
 <input type="color" onChange={(e) => canvas.backgroundColor = e.target.value} />
 
+<button onClick={() => applyFilter("grayscale")} className="px-4 py-2 bg-gray-500 text-white">Grayscale</button>
+<button onClick={() => applyFilter("sepia")} className="px-4 py-2 bg-yellow-500 text-white">Sepia</button>
+<button onClick={() => applyFilter("invert")} className="px-4 py-2 bg-black text-white">Invert</button>
+
+
 <button onClick={addText} className="px-4 py-2 bg-blue-500 text-white">Add Text</button>
         <input type="file" onChange={addImage} className="px-4 py-2" />
         <button onClick={() => apply3DEffect("rotateX")} className="px-4 py-2 bg-green-500 text-white">Rotate X</button>
@@ -204,6 +311,18 @@ const LogoMaker = () => {
         <button onClick={() => apply3DTransform("skewX")} className="px-4 py-2 bg-gray-500 text-white">Skew X</button>
         <button onClick={() => apply3DTransform("skewY")} className="px-4 py-2 bg-gray-500 text-white">Skew Y</button>
         <button onClick={() => apply3DTransform("perspective")} className="px-4 py-2 bg-gray-600 text-white">Rotate</button>
+
+        <button onClick={resetFilters} className="px-4 py-2 bg-gray-400 text-white">Reset Filters</button>
+        <button onClick={cropImage} className="px-4 py-2 bg-green-500 text-white">Crop Image</button>
+        <button onClick={() => flipImage("horizontal")} className="px-4 py-2 bg-red-500 text-white">Flip Horizontally</button>
+<button onClick={() => flipImage("vertical")} className="px-4 py-2 bg-red-700 text-white">Flip Vertically</button>
+<button onClick={applyBlur} className="px-4 py-2 bg-gray-600 text-white">Blur Image</button>
+<button onClick={() => applyBrightnessContrast("brightness", 0.1)} className="px-4 py-2 bg-yellow-500 text-white">Increase Brightness</button>
+<button onClick={() => applyBrightnessContrast("brightness", -0.1)} className="px-4 py-2 bg-yellow-700 text-white">Decrease Brightness</button>
+
+<button onClick={() => applyBrightnessContrast("contrast", 0.2)} className="px-4 py-2 bg-blue-500 text-white">Increase Contrast</button>
+<button onClick={() => applyBrightnessContrast("contrast", -0.2)} className="px-4 py-2 bg-blue-700 text-white">Decrease Contrast</button>
+
 
 <button onClick={() => updateTextStyle("fontSize", 20)}>Small</button>
 <button onClick={() => updateTextStyle("fontSize", 40)}>Large</button>
